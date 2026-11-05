@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <!-- 설치 패키지(publish -r win-x64)용 대상을 항상 함께 복원한다. 없으면 VS Code 등의 복원이 덮어써 NETSDK1047 발생 -->
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <UseWPF>true</UseWPF>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>HecsMonitor</AssemblyName>
+    <RootNamespace>HecsMonitor</RootNamespace>
+    <Product>HECS Live Compression Monitor</Product>
+    <Version>2.2.0</Version>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\HecsMonitor.ico</ApplicationIcon>
+    <!-- 화면에 표시할 기본 제품 이름 (HECS | ECO). 설치 패키지는 build-installer.ps1 -Brand로 지정. 개발자 모드에서 바꾼 값은 같은 빌드에서만 우선 -->
+    <Brand Condition="'$(Brand)' == ''">ECO</Brand>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="DefaultBrand" Value="$(Brand)" />
+    <!-- 설치 패키지 빌드 시각 (build-installer.ps1이 넘김). 새 패키지를 설치하면 개발자 모드에서 고른 제품 이름 대신 빌드 기본값을 쓴다 -->
+    <AssemblyMetadata Include="BuildStamp" Value="$(BuildStamp)" Condition="'$(BuildStamp)' != ''" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\HecsMonitor.ico" />
+    <Resource Include="Assets\HecsMonitor.png" />
+  </ItemGroup>
+
+  <!-- 라이선스: 실행 파일 옆 lic\ 폴더에서 license.key를 찾는다 -->
+  <ItemGroup>
+    <None Include="lic\README.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <!-- 개발 PC용 키(있을 때만)는 디버그 실행을 위해 출력 폴더에만 복사하고, 설치 패키지(publish)에는 넣지 않는다 -->
+    <None Include="lic\license.key" Condition="Exists('lic\license.key')" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
+</Project>

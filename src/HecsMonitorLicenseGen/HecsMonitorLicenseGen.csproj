@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- HECS Monitor 라이선스 발급 프로그램 (License Studio). 서명 개인키를 다루므로 설치 패키지에는 포함하지 않는다. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <!-- 설치 패키지(publish -r win-x64)용 대상을 항상 함께 복원한다. 없으면 VS Code 등의 복원이 덮어써 NETSDK1047 발생 -->
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <UseWPF>true</UseWPF>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>HecsMonitorLicenseGen</AssemblyName>
+    <RootNamespace>HecsMonitorLicenseGen</RootNamespace>
+    <Product>HECS License Studio</Product>
+    <Version>1.2.0</Version>
+    <ApplicationIcon>..\HecsMonitor\Assets\HecsMonitor.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 같은 테마(Theme.xaml)와 같은 라이선스 코어(lic\SoftwareLicenseCore.cs)를 사용해 형식이 항상 일치하게 한다 -->
+    <ProjectReference Include="..\HecsMonitor\HecsMonitor.csproj" />
+  </ItemGroup>
+
+  <!--
+    실행 파일(Exe) 프로젝트를 참조하면 SDK가 그 출력물(HecsMonitor.exe, 설정 파일, lic\ 폴더)까지 복사한다.
+    이 프로그램에 필요한 것은 HecsMonitor.dll(테마·아이콘·라이선스 코어)뿐이므로 나머지는 빌드 후 지운다.
+  -->
+  <Target Name="RemoveReferencedAppFiles" AfterTargets="Build;Publish">
+    <ItemGroup>
+      <_UnneededFromHecsMonitor Include="$(OutDir)HecsMonitor.exe;$(OutDir)HecsMonitor.runtimeconfig.json;$(OutDir)HecsMonitor.deps.json;$(OutDir)lic\license.key;$(OutDir)lic\README.txt" />
+      <_UnneededFromHecsMonitor Include="$(PublishDir)HecsMonitor.exe;$(PublishDir)HecsMonitor.runtimeconfig.json;$(PublishDir)HecsMonitor.deps.json;$(PublishDir)lic\license.key;$(PublishDir)lic\README.txt" Condition="'$(PublishDir)' != ''" />
+    </ItemGroup>
+    <Delete Files="@(_UnneededFromHecsMonitor)" />
+    <RemoveDir Directories="$(OutDir)lic" Condition="Exists('$(OutDir)lic')" ContinueOnError="true" />
+  </Target>
+
+</Project>

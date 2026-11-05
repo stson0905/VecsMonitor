@@ -1,0 +1,938 @@
+<UserControl x:Class="HecsMonitor.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:HecsMonitor.Controls"
+             xmlns:b="clr-namespace:HecsMonitor.Converters">
+    <UserControl.Resources>
+        <Style x:Key="Panel" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="Padding" Value="24,20"/>
+            <Setter Property="Margin" Value="0,0,0,16"/>
+        </Style>
+        <Style x:Key="PanelTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <!-- 상세 설명이 숨겨진 기본 상태에서는 제목 아래 간격을 넓힌다 -->
+            <Setter Property="Margin" Value="0,0,0,16"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding DataContext.DeveloperMode, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                    <Setter Property="Margin" Value="0,0,0,4"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <!-- 상세 설명: 기본은 숨김, 개발자 모드(시스템 → 버전 5회 클릭)에서만 표시 -->
+        <Style x:Key="DevText" TargetType="TextBlock" BasedOn="{StaticResource Caption}">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding DataContext.DeveloperMode, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="PanelDesc" TargetType="TextBlock" BasedOn="{StaticResource DevText}">
+            <Setter Property="Margin" Value="0,0,0,18"/>
+        </Style>
+        <Style x:Key="DevPanel" TargetType="Border" BasedOn="{StaticResource Panel}">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding DataContext.DeveloperMode, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="Row" TargetType="Grid">
+            <Setter Property="Margin" Value="0,0,0,18"/>
+        </Style>
+        <Style x:Key="TestResult" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Margin" Value="2,8,0,0"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Foreground" Value="{StaticResource SubTextBrush}"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="20,4,20,20">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="230"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+
+        <!-- 섹션 목록 -->
+        <DockPanel Margin="0,0,20,0">
+            <StackPanel DockPanel.Dock="Bottom">
+                <Button Style="{StaticResource PrimaryButton}" Command="{Binding ApplyCommand}" Padding="16,11">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE73E;" Style="{StaticResource Icon}" Margin="0,0,8,0"/>
+                        <TextBlock Text="저장 및 적용"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource GhostButton}" Command="{Binding RevertCommand}" Margin="0,8,0,0" Padding="16,9">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE7A7;" Style="{StaticResource Icon}" Margin="0,0,8,0"/>
+                        <TextBlock Text="변경 취소"/>
+                    </StackPanel>
+                </Button>
+                <TextBlock Text="변경 사항은 ‘저장 및 적용’을 눌러야 반영됩니다. URL·엔진이 바뀐 채널만 다시 연결됩니다."
+                           Style="{StaticResource DevText}" FontSize="11" Margin="4,12,4,0"/>
+            </StackPanel>
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="6,6,0,18">
+                    <TextBlock Text="설정" FontSize="24" FontWeight="SemiBold"/>
+                    <Border CornerRadius="6" Background="#22FBBF24" Padding="7,2" Margin="10,0,0,0" VerticalAlignment="Center"
+                            ToolTip="시스템 → 버전을 5번 누르면 해제됩니다"
+                            Visibility="{Binding DeveloperMode, Converter={StaticResource BoolVis}}">
+                        <TextBlock Text="개발자 모드" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource WarnBrush}"/>
+                    </Border>
+                </StackPanel>
+                <RadioButton Style="{StaticResource SectionItem}" Tag="&#xE714;" Content="채널 관리" GroupName="sec"
+                             IsChecked="{Binding Section, Converter={StaticResource Eq}, ConverterParameter=channels}"/>
+                <RadioButton Style="{StaticResource SectionItem}" Tag="&#xE721;" Content="카메라 검색 (ONVIF)" GroupName="sec"
+                             IsChecked="{Binding Section, Converter={StaticResource Eq}, ConverterParameter=discover}"/>
+                <RadioButton Style="{StaticResource SectionItem}" Tag="&#xE9D9;" Content="측정 · 화면" GroupName="sec"
+                             IsChecked="{Binding Section, Converter={StaticResource Eq}, ConverterParameter=measure}"/>
+                <RadioButton Style="{StaticResource SectionItem}" Tag="&#xEA8F;" Content="알림 · 기록" GroupName="sec"
+                             IsChecked="{Binding Section, Converter={StaticResource Eq}, ConverterParameter=alarm}"/>
+                <RadioButton Style="{StaticResource SectionItem}" Tag="&#xE950;" Content="스트림 엔진" GroupName="sec"
+                             IsChecked="{Binding Section, Converter={StaticResource Eq}, ConverterParameter=engine}"/>
+                <RadioButton Style="{StaticResource SectionItem}" Tag="&#xE7F4;" Content="시스템" GroupName="sec"
+                             IsChecked="{Binding Section, Converter={StaticResource Eq}, ConverterParameter=about}"/>
+            </StackPanel>
+        </DockPanel>
+
+        <!-- ===== 채널 관리 ===== -->
+        <Grid Grid.Column="1" Visibility="{Binding Section, Converter={StaticResource Eq}, ConverterParameter=channels}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="340"/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+
+            <Border Style="{StaticResource Panel}" Padding="14,14,8,10" Margin="0,0,16,0">
+                <DockPanel>
+                    <DockPanel DockPanel.Dock="Top" Margin="6,0,4,12">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button Style="{StaticResource IconButton}" Content="&#xE74A;" ToolTip="위로" Command="{Binding MoveUpCommand}"/>
+                            <Button Style="{StaticResource IconButton}" Content="&#xE74B;" ToolTip="아래로" Command="{Binding MoveDownCommand}"/>
+                            <Button Style="{StaticResource IconButton}" Content="&#xE8C8;" ToolTip="복제" Command="{Binding DuplicateCommand}"/>
+                            <Button Style="{StaticResource IconButton}" Content="&#xE74D;" ToolTip="삭제" Command="{Binding DeleteCommand}"/>
+                        </StackPanel>
+                        <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold">
+                            <Run Text="채널 "/><Run Text="{Binding ChannelCountText, Mode=OneWay}" Foreground="{StaticResource HecsBrush}"/>
+                        </TextBlock>
+                    </DockPanel>
+                    <Button DockPanel.Dock="Bottom" Style="{StaticResource GhostButton}" Margin="0,8,6,0" Command="{Binding AddCommand}" Padding="12,10">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE710;" Style="{StaticResource Icon}" Margin="0,0,8,0" Foreground="{StaticResource HecsBrush}"/>
+                            <TextBlock Text="채널 추가"/>
+                        </StackPanel>
+                    </Button>
+                    <ListBox ItemsSource="{Binding Channels}" SelectedItem="{Binding SelectedChannel}"
+                             Background="Transparent" BorderThickness="0" Padding="0,0,4,0"
+                             ItemContainerStyle="{StaticResource CardListItem}"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}" FontSize="13.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding Group}" FontSize="11" Foreground="{StaticResource FaintBrush}" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock FontSize="11" Margin="0,5,0,0" TextTrimming="CharacterEllipsis" Foreground="{StaticResource SubTextBrush}">
+                                            <Run Text="●" Foreground="{StaticResource OrigBrush}"/><Run Text=" "/><Run Text="{Binding OriginalUrl, Mode=OneWay}"/>
+                                        </TextBlock>
+                                        <TextBlock FontSize="11" TextTrimming="CharacterEllipsis" Foreground="{StaticResource SubTextBrush}">
+                                            <Run Text="●" Foreground="{StaticResource HecsBrush}"/><Run Text=" "/><Run Text="{Binding HecsUrl, Mode=OneWay}"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <Border Grid.Column="1" CornerRadius="6" Padding="6,2" VerticalAlignment="Top" Margin="8,0,0,0" Background="#14FFFFFF"
+                                            Visibility="{Binding Enabled, Converter={StaticResource InvBoolVis}}">
+                                        <TextBlock Text="비활성" FontSize="10.5" Foreground="{StaticResource SubTextBrush}"/>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <!-- 측정 구성도 -->
+                    <Border Style="{StaticResource Panel}" Padding="24,18">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel HorizontalAlignment="Center">
+                                <Border Width="52" Height="52" CornerRadius="14" Background="#22F5A524">
+                                    <TextBlock Text="&#xE722;" Style="{StaticResource Icon}" FontSize="22" HorizontalAlignment="Center" Foreground="{StaticResource OrigBrush}"/>
+                                </Border>
+                                <TextBlock Text="카메라" HorizontalAlignment="Center" Margin="0,6,0,0" FontSize="12"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,10,18">
+                                <TextBlock Text="원본 RTSP · 측정" HorizontalAlignment="Center" FontSize="11" Foreground="{StaticResource OrigBrush}"/>
+                                <Rectangle Height="2" Fill="{StaticResource OrigBrush}" Margin="0,4,0,0" Opacity="0.7"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                                <Border Width="52" Height="52" CornerRadius="14" Background="{StaticResource AccentGrad}">
+                                    <TextBlock Text="{b:Brand 'HECS'}" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource InkBrush}"/>
+                                </Border>
+                                <TextBlock Text="압축 전송" HorizontalAlignment="Center" Margin="0,6,0,0" FontSize="12"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="3" VerticalAlignment="Center" Margin="10,0,10,18">
+                                <TextBlock Text="{b:Brand 'HECS RTSP · 측정 + 썸네일'}" HorizontalAlignment="Center" FontSize="11" Foreground="{StaticResource HecsBrush}"/>
+                                <Rectangle Height="2" Fill="{StaticResource HecsBrush}" Margin="0,4,0,0" Opacity="0.7"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="4" HorizontalAlignment="Center">
+                                <Border Width="52" Height="52" CornerRadius="14" Background="#2234D399">
+                                    <TextBlock Text="&#xE9D9;" Style="{StaticResource Icon}" FontSize="22" HorizontalAlignment="Center" Foreground="{StaticResource SaveBrush}"/>
+                                </Border>
+                                <TextBlock Text="이 모니터" HorizontalAlignment="Center" Margin="0,6,0,0" FontSize="12"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- 선택 채널 편집 -->
+                    <Border Style="{StaticResource Panel}" Visibility="{Binding HasSelection, Converter={StaticResource BoolVis}}">
+                        <StackPanel DataContext="{Binding SelectedChannel}">
+                            <DockPanel Margin="0,0,0,18">
+                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" Content="모니터링 사용" IsChecked="{Binding Enabled}"/>
+                                <TextBlock Text="채널 정보" Style="{StaticResource PanelTitle}" VerticalAlignment="Center"/>
+                            </DockPanel>
+                            <Grid Style="{StaticResource Row}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="채널 이름" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Tag="예: 정문 출입구"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="그룹 / 위치" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox Text="{Binding Group, UpdateSourceTrigger=PropertyChanged}" Tag="예: 1층"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <StackPanel Margin="0,0,0,18">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Ellipse Width="7" Height="7" Fill="{StaticResource OrigBrush}" Margin="0,0,7,0"/>
+                                    <TextBlock Text="원본 카메라 RTSP URL" Style="{StaticResource FieldLabel}" Margin="0"/>
+                                </StackPanel>
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="연결 테스트" Margin="10,0,0,0"
+                                            Command="{Binding DataContext.TestOriginalCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                    <TextBox Text="{Binding OriginalUrl, UpdateSourceTrigger=PropertyChanged}" Tag="rtsp://192.168.0.10:554/stream1"/>
+                                </DockPanel>
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Text="{Binding OrigUser, UpdateSourceTrigger=PropertyChanged}" Tag="카메라 ID"/>
+                                    <Grid Grid.Column="2">
+                                        <PasswordBox c:PasswordHelper.BoundPassword="{Binding OrigPassword, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Text="비밀번호" Foreground="{StaticResource FaintBrush}" Margin="13,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                                                   Visibility="{Binding OrigPassword, Converter={StaticResource InvBoolVis}}"/>
+                                    </Grid>
+                                    <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="10,0,0,0">
+                                        <Button Style="{StaticResource GhostButton}" ToolTip="카메라 IP로 ONVIF에 접속해 정확한 RTSP 주소를 받아 옵니다"
+                                                Command="{Binding DataContext.ResolveOriginalCommand, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="&#xE721;" Style="{StaticResource Icon}" Margin="0,0,6,0" FontSize="12"/>
+                                                <TextBlock Text="ONVIF 주소 조회"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Style="{StaticResource GhostButton}" Content="계정 전체 적용" Margin="8,0,0,0"
+                                                ToolTip="이 ID/비밀번호를 모든 채널의 원본 카메라 계정으로 적용"
+                                                Command="{Binding DataContext.ApplyAccountToAllCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                    </StackPanel>
+                                </Grid>
+                                <TextBlock Text="{Binding DataContext.OrigTest, RelativeSource={RelativeSource AncestorType=UserControl}}" Style="{StaticResource TestResult}"/>
+                            </StackPanel>
+
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Ellipse Width="7" Height="7" Fill="{StaticResource HecsBrush}" Margin="0,0,7,0"/>
+                                    <TextBlock Text="{b:Brand 'HECS 출력 RTSP URL'}" Style="{StaticResource FieldLabel}" Margin="0"/>
+                                </StackPanel>
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="연결 테스트" Margin="10,0,0,0"
+                                            Command="{Binding DataContext.TestHecsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                    <TextBox Text="{Binding HecsUrl, UpdateSourceTrigger=PropertyChanged}" Tag="rtsp://192.168.100.210:7000/"/>
+                                </DockPanel>
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Text="{Binding HecsUser, UpdateSourceTrigger=PropertyChanged}" Tag="{b:Brand 'HECS ID (인증 없으면 비워 두세요)'}"/>
+                                    <Grid Grid.Column="2">
+                                        <PasswordBox c:PasswordHelper.BoundPassword="{Binding HecsPassword, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Text="비밀번호" Foreground="{StaticResource FaintBrush}" Margin="13,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                                                   Visibility="{Binding HecsPassword, Converter={StaticResource InvBoolVis}}"/>
+                                    </Grid>
+                                </Grid>
+                                <TextBlock Text="{Binding DataContext.HecsTest, RelativeSource={RelativeSource AncestorType=UserControl}}" Style="{StaticResource TestResult}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- HECS 채널 일괄 등록 -->
+                    <Border Style="{StaticResource Panel}">
+                        <StackPanel>
+                            <TextBlock Text="{b:Brand 'HECS 채널 일괄 등록'}" Style="{StaticResource PanelTitle}"/>
+                            <TextBlock Style="{StaticResource PanelDesc}"
+                                       Text="{b:Brand 'HECS 장비는 카메라마다 출력 포트를 하나씩 엽니다 (예: 192.168.100.210:7000, 7100, 7200 …). 장비 IP와 포트 규칙을 입력하면 채널을 한 번에 만듭니다. 만든 뒤 각 채널의 원본 카메라 URL을 입력하세요.'}"/>
+                            <Grid Style="{StaticResource Row}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="{b:Brand 'HECS 장비 IP'}" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox Text="{Binding Draft.BulkIp, UpdateSourceTrigger=PropertyChanged}" TextChanged="OnBulkChanged"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="시작 포트" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox Text="{Binding Draft.BulkStartPort, UpdateSourceTrigger=PropertyChanged}" TextChanged="OnBulkChanged"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="4">
+                                    <TextBlock Text="포트 간격" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox Text="{Binding Draft.BulkPortStep, UpdateSourceTrigger=PropertyChanged}" TextChanged="OnBulkChanged"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="6">
+                                    <TextBlock Text="채널 수" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox Text="{Binding Draft.BulkCount, UpdateSourceTrigger=PropertyChanged}" TextChanged="OnBulkChanged"/>
+                                </StackPanel>
+                            </Grid>
+                            <Grid Style="{StaticResource Row}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="{b:Brand 'HECS URL 형식  (\{ip\} \{port\} \{n\})'}" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox Text="{Binding Draft.BulkUrlTemplate, UpdateSourceTrigger=PropertyChanged}" TextChanged="OnBulkChanged"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="이름 형식  ({n})" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox Text="{Binding Draft.BulkNameTemplate, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                            </Grid>
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Command="{Binding BulkGenerateCommand}" Margin="12,0,0,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE710;" Style="{StaticResource Icon}" Margin="0,0,8,0" Foreground="{StaticResource HecsBrush}"/>
+                                        <TextBlock Text="채널 생성"/>
+                                    </StackPanel>
+                                </Button>
+                                <TextBlock VerticalAlignment="Center" FontSize="11.5" Foreground="{StaticResource FaintBrush}" TextTrimming="CharacterEllipsis">
+                                    <Run Text="미리보기  "/><Run Text="{Binding BulkPreview, Mode=OneWay}" Foreground="{StaticResource HecsBrush}"/>
+                                </TextBlock>
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource DevPanel}" Background="#0B22D3EE" BorderBrush="#2222D3EE">
+                        <StackPanel>
+                            <TextBlock Text="URL 입력 팁" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                            <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" LineHeight="20">
+                                <Run Text="{b:Brand '• 원본 URL은 비트레이트 측정만 하고(디코딩 없음) HECS URL은 측정과 썸네일 디코딩을 함께 합니다. 스트림마다 연결은 하나입니다.'}"/><LineBreak/>
+                                • rtsp:// 외에 rtmp://, http(s)://, srt:// 도 사용할 수 있습니다.<LineBreak/>
+                                • 로컬 영상 파일 경로(예: D:\test\cam1.mp4)를 넣으면 실시간 속도로 반복 재생되어 테스트할 수 있습니다.<LineBreak/>
+                                • demo://이름?mbps=4&amp;ratio=8 은 카메라 없이 화면을 확인하는 데모 스트림입니다.
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <!-- ===== 카메라 검색 (ONVIF) ===== -->
+        <DockPanel Grid.Column="1" Visibility="{Binding Section, Converter={StaticResource Eq}, ConverterParameter=discover}">
+            <Border DockPanel.Dock="Top" Style="{StaticResource Panel}">
+                <StackPanel>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Command="{Binding ScanCommand}" VerticalAlignment="Top" Padding="18,10">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE721;" Style="{StaticResource Icon}" Margin="0,0,8,0"/>
+                                <TextBlock Text="네트워크 검색"/>
+                            </StackPanel>
+                        </Button>
+                        <StackPanel>
+                            <TextBlock Text="카메라 검색 (ONVIF)" Style="{StaticResource PanelTitle}"/>
+                            <TextBlock Text="{Binding ScanStatus}" Style="{StaticResource Caption}" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <Grid Margin="0,16,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="300"/>
+                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <!-- 대상 채널 -->
+                        <TextBlock Text="대상 채널" Style="{StaticResource FieldLabel}" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Column="1" ItemsSource="{Binding Channels}" SelectedItem="{Binding SelectedChannel}"
+                                  ToolTip="{b:Brand '‘→ 원본’ / ‘→ HECS’ 버튼이 이 채널에 적용됩니다'}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock TextTrimming="CharacterEllipsis">
+                                        <Run Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold"/><Run Text="  "/><Run Text="{Binding Group, Mode=OneWay}" Foreground="{StaticResource FaintBrush}" FontSize="11.5"/>
+                                    </TextBlock>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <!-- 기본 계정 -->
+                        <TextBlock Grid.Column="3" Text="기본 계정" Style="{StaticResource FieldLabel}" Margin="0,0,12,0" VerticalAlignment="Center"
+                                   ToolTip="저장된 계정이 없는 카메라에 처음 채워지는 계정입니다"/>
+                        <TextBox Grid.Column="4" Text="{Binding Draft.OnvifUser, UpdateSourceTrigger=PropertyChanged}" Tag="ID"/>
+                        <Grid Grid.Column="6">
+                            <PasswordBox c:PasswordHelper.BoundPassword="{Binding Draft.OnvifPassword, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBlock Text="비밀번호" Foreground="{StaticResource FaintBrush}" Margin="13,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                                       Visibility="{Binding Draft.OnvifPassword, Converter={StaticResource InvBoolVis}}"/>
+                        </Grid>
+                        <Button Grid.Column="7" Style="{StaticResource GhostButton}" Content="모든 카메라에 채우기" Margin="8,0,0,0"
+                                Command="{Binding FillDefaultAccountCommand}" ToolTip="검색된 모든 카메라의 ID/비밀번호를 기본 계정으로 바꿉니다"/>
+                    </Grid>
+
+                    <!-- 대상 채널 현재 상태 -->
+                    <Border Margin="0,12,0,0" CornerRadius="10" Background="{StaticResource Surface2Brush}" Padding="14,9"
+                            Visibility="{Binding HasSelection, Converter={StaticResource BoolVis}}">
+                        <Grid DataContext="{Binding SelectedChannel}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="20"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock FontSize="12" TextTrimming="CharacterEllipsis">
+                                <Run Text="● 원본  " Foreground="{StaticResource OrigBrush}"/><Run Text="{Binding OriginalUrl, Mode=OneWay}" Foreground="{StaticResource SubTextBrush}"/>
+                            </TextBlock>
+                            <TextBlock Grid.Column="2" FontSize="12" TextTrimming="CharacterEllipsis">
+                                <Run Text="{b:Brand '● HECS  '}" Foreground="{StaticResource HecsBrush}"/><Run Text="{Binding HecsUrl, Mode=OneWay}" Foreground="{StaticResource SubTextBrush}"/>
+                            </TextBlock>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Panel}" Padding="0,8,0,8">
+                <DockPanel>
+                    <Grid DockPanel.Dock="Top" Margin="24,8,24,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="1.1*"/>
+                            <ColumnDefinition Width="1.2*"/>
+                            <ColumnDefinition Width="1.2*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="카메라 이름 · 모델" Style="{StaticResource Overline}"/>
+                        <TextBlock Grid.Column="1" Text="카메라 IP" Style="{StaticResource Overline}"/>
+                        <TextBlock Grid.Column="2" Text="ONVIF ID" Style="{StaticResource Overline}" Margin="6,0,0,0"/>
+                        <TextBlock Grid.Column="3" Text="비밀번호" Style="{StaticResource Overline}" Margin="6,0,0,0"/>
+                        <TextBlock Grid.Column="4" Text="지정" Style="{StaticResource Overline}" Width="330" Margin="12,0,0,0"/>
+                    </Grid>
+                    <Grid>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding Devices}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Margin="12,0,12,6" Padding="12,10" CornerRadius="10" Background="{StaticResource Surface2Brush}">
+                                            <StackPanel>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="2*"/>
+                                                        <ColumnDefinition Width="1.1*"/>
+                                                        <ColumnDefinition Width="1.2*"/>
+                                                        <ColumnDefinition Width="1.2*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel VerticalAlignment="Center" Margin="0,0,8,0">
+                                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Text="{Binding ModelLine}" FontSize="11.5" Foreground="{StaticResource FaintBrush}" TextTrimming="CharacterEllipsis"/>
+                                                    </StackPanel>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Ip}" VerticalAlignment="Center" FontFamily="{StaticResource NumFont}"
+                                                               ToolTip="{Binding Device.XAddr}"/>
+                                                    <TextBox Grid.Column="2" Margin="6,0" Padding="10,6" Text="{Binding User, UpdateSourceTrigger=PropertyChanged}" Tag="ID"/>
+                                                    <Grid Grid.Column="3" Margin="6,0">
+                                                        <PasswordBox Padding="10,6" c:PasswordHelper.BoundPassword="{Binding Password, UpdateSourceTrigger=PropertyChanged}"/>
+                                                        <TextBlock Text="비밀번호" Foreground="{StaticResource FaintBrush}" Margin="12,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                                                                   Visibility="{Binding Password, Converter={StaticResource InvBoolVis}}"/>
+                                                    </Grid>
+                                                    <StackPanel Grid.Column="4" Orientation="Horizontal" Margin="6,0,0,0">
+                                                        <Button Style="{StaticResource IconButton}" Content="&#xE721;" ToolTip="이 계정으로 RTSP 주소 조회 (계정 확인)"
+                                                                CommandParameter="{Binding}"
+                                                                Command="{Binding DataContext.LookupDeviceCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                                        <Button Style="{StaticResource GhostButton}" Padding="10,6" Margin="4,0,0,0" CommandParameter="{Binding}"
+                                                                ToolTip="이 카메라로 새 채널을 만듭니다 (원본으로 지정)"
+                                                                Command="{Binding DataContext.AddDeviceCommand, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="&#xE710;" Style="{StaticResource Icon}" FontSize="10" Margin="0,0,6,0"/>
+                                                                <TextBlock Text="새 채널"/>
+                                                            </StackPanel>
+                                                        </Button>
+                                                        <Button Style="{StaticResource GhostButton}" Padding="10,6" Margin="6,0,0,0" CommandParameter="{Binding}"
+                                                                ToolTip="대상 채널의 원본 카메라로 지정"
+                                                                Command="{Binding DataContext.ApplyToOriginalCommand, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                                            <TextBlock><Run Text="→ " Foreground="{StaticResource OrigBrush}"/><Run Text="원본"/></TextBlock>
+                                                        </Button>
+                                                        <Button Style="{StaticResource GhostButton}" Padding="10,6" Margin="6,0,0,0" CommandParameter="{Binding}"
+                                                                ToolTip="{b:Brand '대상 채널의 HECS 출력으로 지정'}"
+                                                                Command="{Binding DataContext.ApplyToHecsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                                            <TextBlock><Run Text="→ " Foreground="{StaticResource HecsBrush}"/><Run Text="{b:Brand 'HECS 출력'}"/></TextBlock>
+                                                        </Button>
+                                                    </StackPanel>
+                                                </Grid>
+                                                <TextBlock Text="{Binding Status}" FontSize="11.5" Margin="0,6,0,0" TextTrimming="CharacterEllipsis"
+                                                           Foreground="{Binding StatusKind, Converter={StaticResource KindBrush}}"
+                                                           Visibility="{Binding Status, Converter={StaticResource BoolVis}}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                        <TextBlock Text="검색 결과가 여기에 표시됩니다" Style="{StaticResource Caption}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Visibility="{Binding Devices.Count, Converter={StaticResource InvBoolVis}}"/>
+                    </Grid>
+                </DockPanel>
+            </Border>
+        </DockPanel>
+
+        <!-- ===== 측정 · 화면 ===== -->
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding Section, Converter={StaticResource Eq}, ConverterParameter=measure}">
+            <StackPanel MaxWidth="880" HorizontalAlignment="Left">
+                <Border Style="{StaticResource Panel}">
+                    <StackPanel>
+                        <TextBlock Text="비트레이트 측정" Style="{StaticResource PanelTitle}"/>
+                        <TextBlock Style="{StaticResource PanelDesc}"
+                                   Text="{b:Brand '원본과 HECS 스트림의 비디오 패킷 크기를 수신 시각 기준으로 합산해 비트레이트를 구하고, 압축률 = 원본 비트레이트 ÷ HECS 비트레이트로 계산합니다. 윈도가 길수록 값이 안정적이고 짧을수록 변화에 민감합니다.'}"/>
+                        <TextBlock Text="측정 윈도" Style="{StaticResource FieldLabel}"/>
+                        <Border Style="{StaticResource SegmentHost}" Margin="0,0,0,18">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Style="{StaticResource Segment}" Content="1초" GroupName="win" IsChecked="{Binding Draft.MeasureWindowSec, Converter={StaticResource Eq}, ConverterParameter=1}"/>
+                                <RadioButton Style="{StaticResource Segment}" Content="3초" GroupName="win" IsChecked="{Binding Draft.MeasureWindowSec, Converter={StaticResource Eq}, ConverterParameter=3}"/>
+                                <RadioButton Style="{StaticResource Segment}" Content="5초" GroupName="win" IsChecked="{Binding Draft.MeasureWindowSec, Converter={StaticResource Eq}, ConverterParameter=5}"/>
+                                <RadioButton Style="{StaticResource Segment}" Content="10초" GroupName="win" IsChecked="{Binding Draft.MeasureWindowSec, Converter={StaticResource Eq}, ConverterParameter=10}"/>
+                            </StackPanel>
+                        </Border>
+                        <TextBlock Text="그래프 기록 길이" Style="{StaticResource FieldLabel}"/>
+                        <Border Style="{StaticResource SegmentHost}">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Style="{StaticResource Segment}" Content="1분" GroupName="hist" IsChecked="{Binding Draft.HistorySeconds, Converter={StaticResource Eq}, ConverterParameter=60}"/>
+                                <RadioButton Style="{StaticResource Segment}" Content="2분" GroupName="hist" IsChecked="{Binding Draft.HistorySeconds, Converter={StaticResource Eq}, ConverterParameter=120}"/>
+                                <RadioButton Style="{StaticResource Segment}" Content="5분" GroupName="hist" IsChecked="{Binding Draft.HistorySeconds, Converter={StaticResource Eq}, ConverterParameter=300}"/>
+                                <RadioButton Style="{StaticResource Segment}" Content="10분" GroupName="hist" IsChecked="{Binding Draft.HistorySeconds, Converter={StaticResource Eq}, ConverterParameter=600}"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Panel}">
+                    <StackPanel>
+                        <TextBlock Text="{b:Brand 'HECS 썸네일'}" Style="{StaticResource PanelTitle}"/>
+                        <TextBlock Style="{StaticResource PanelDesc}"
+                                   Text="메인 화면 카드에 표시되는 압축 영상의 디코딩 해상도와 갱신 속도입니다. 채널이 많으면 값을 낮춰 CPU 사용량을 줄이세요."/>
+                        <TextBlock Text="썸네일 해상도" Style="{StaticResource FieldLabel}"/>
+                        <Border Style="{StaticResource SegmentHost}" Margin="0,0,0,18">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Style="{StaticResource Segment}" Content="320×180" GroupName="tw" IsChecked="{Binding Draft.ThumbWidth, Converter={StaticResource Eq}, ConverterParameter=320}"/>
+                                <RadioButton Style="{StaticResource Segment}" Content="384×216" GroupName="tw" IsChecked="{Binding Draft.ThumbWidth, Converter={StaticResource Eq}, ConverterParameter=384}"/>
+                                <RadioButton Style="{StaticResource Segment}" Content="480×270" GroupName="tw" IsChecked="{Binding Draft.ThumbWidth, Converter={StaticResource Eq}, ConverterParameter=480}"/>
+                                <RadioButton Style="{StaticResource Segment}" Content="640×360" GroupName="tw" IsChecked="{Binding Draft.ThumbWidth, Converter={StaticResource Eq}, ConverterParameter=640}"/>
+                            </StackPanel>
+                        </Border>
+                        <TextBlock Text="썸네일 갱신 속도" Style="{StaticResource FieldLabel}"/>
+                        <Border Style="{StaticResource SegmentHost}" Margin="0,0,0,18">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Style="{StaticResource Segment}" Content="5 fps" GroupName="tf" IsChecked="{Binding Draft.ThumbFps, Converter={StaticResource Eq}, ConverterParameter=5}"/>
+                                <RadioButton Style="{StaticResource Segment}" Content="10 fps" GroupName="tf" IsChecked="{Binding Draft.ThumbFps, Converter={StaticResource Eq}, ConverterParameter=10}"/>
+                                <RadioButton Style="{StaticResource Segment}" Content="15 fps" GroupName="tf" IsChecked="{Binding Draft.ThumbFps, Converter={StaticResource Eq}, ConverterParameter=15}"/>
+                                <RadioButton Style="{StaticResource Segment}" Content="25 fps" GroupName="tf" IsChecked="{Binding Draft.ThumbFps, Converter={StaticResource Eq}, ConverterParameter=25}"/>
+                            </StackPanel>
+                        </Border>
+                        <TextBlock Text="카드 크기" Style="{StaticResource FieldLabel}"/>
+                        <Border Style="{StaticResource SegmentHost}" Margin="0,0,0,18">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Style="{StaticResource Segment}" Content="작게 · 12" GroupName="cs" IsChecked="{Binding Draft.CardSize, Converter={StaticResource Eq}, ConverterParameter=S}"/>
+                                <RadioButton Style="{StaticResource Segment}" Content="보통 · 8" GroupName="cs" IsChecked="{Binding Draft.CardSize, Converter={StaticResource Eq}, ConverterParameter=M}"/>
+                                <RadioButton Style="{StaticResource Segment}" Content="크게 · 6" GroupName="cs" IsChecked="{Binding Draft.CardSize, Converter={StaticResource Eq}, ConverterParameter=L}"/>
+                            </StackPanel>
+                        </Border>
+                        <TextBlock Style="{StaticResource DevText}" FontSize="11.5" Margin="0,-12,0,18"
+                                   Text="한 화면에 표시할 카드 수입니다. 최대 64채널은 작게 6쪽 · 보통 8쪽 · 크게 11쪽으로 나뉘며, 카드는 창 크기에 맞춰 같은 비율로 커지거나 작아집니다."/>
+                        <TextBlock Text="카드 페이지 자동 넘김" Style="{StaticResource FieldLabel}"/>
+                        <Border Style="{StaticResource SegmentHost}" Margin="0,0,0,18">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Style="{StaticResource Segment}" Content="끔" GroupName="pt" IsChecked="{Binding Draft.PageTourSec, Converter={StaticResource Eq}, ConverterParameter=0}"/>
+                                <RadioButton Style="{StaticResource Segment}" Content="10초" GroupName="pt" IsChecked="{Binding Draft.PageTourSec, Converter={StaticResource Eq}, ConverterParameter=10}"/>
+                                <RadioButton Style="{StaticResource Segment}" Content="30초" GroupName="pt" IsChecked="{Binding Draft.PageTourSec, Converter={StaticResource Eq}, ConverterParameter=30}"/>
+                                <RadioButton Style="{StaticResource Segment}" Content="60초" GroupName="pt" IsChecked="{Binding Draft.PageTourSec, Converter={StaticResource Eq}, ConverterParameter=60}"/>
+                            </StackPanel>
+                        </Border>
+                        <CheckBox Style="{StaticResource Switch}" Content="대시보드에 이벤트 패널 표시" IsChecked="{Binding Draft.ShowEventPanel}"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ===== 알림 · 기록 ===== -->
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding Section, Converter={StaticResource Eq}, ConverterParameter=alarm}">
+            <StackPanel MaxWidth="880" HorizontalAlignment="Left">
+                <Border Style="{StaticResource Panel}">
+                    <StackPanel>
+                        <TextBlock Text="압축률 경보" Style="{StaticResource PanelTitle}"/>
+                        <TextBlock Style="{StaticResource PanelDesc}"
+                                   Text="압축률이 기준보다 낮은 상태가 지정 시간 이상 이어지면 카드 테두리가 붉게 바뀌고 이벤트가 기록됩니다. 기준 이상으로 돌아오면 자동 해제됩니다."/>
+                        <Grid Style="{StaticResource Row}" HorizontalAlignment="Left">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="16"/>
+                                <ColumnDefinition Width="200"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="최소 압축률 ( N : 1 )" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding Draft.AlarmRatioMin, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="지속 시간 (초)" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding Draft.AlarmHoldSec, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                        </Grid>
+                        <CheckBox Style="{StaticResource Switch}" Content="스트림 끊김을 이벤트로 기록" IsChecked="{Binding Draft.AlarmOnOffline}"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Panel}">
+                    <StackPanel>
+                        <TextBlock Text="측정 기록 (CSV)" Style="{StaticResource PanelTitle}"/>
+                        <TextBlock Style="{StaticResource PanelDesc}"
+                                   Text="일정 간격마다 채널별 평균 비트레이트·압축률을 일자별 CSV(measure_YYYY-MM-DD.csv)로, 이벤트는 events_YYYY-MM-DD.log로 저장합니다. Excel에서 바로 열 수 있습니다."/>
+                        <CheckBox Style="{StaticResource Switch}" Content="측정 기록 사용" IsChecked="{Binding Draft.CsvLogging}" Margin="0,0,0,18"/>
+                        <Grid Style="{StaticResource Row}" HorizontalAlignment="Left">
+                            <StackPanel Width="200">
+                                <TextBlock Text="기록 간격 (초)" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding Draft.CsvIntervalSec, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Text="기록 폴더" Style="{StaticResource FieldLabel}"/>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="열기" Margin="8,0,0,0" Command="{Binding OpenLogFolderCommand}"/>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="찾아보기" Margin="10,0,0,0" Command="{Binding BrowseLogFolderCommand}"/>
+                            <TextBox Text="{Binding Draft.LogFolder, UpdateSourceTrigger=PropertyChanged}"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Panel}">
+                    <StackPanel>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE72C;" ToolTip="새로 고침" Command="{Binding RefreshStorageCommand}"/>
+                            <TextBlock Text="저장 용량" Style="{StaticResource PanelTitle}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                        <TextBlock Style="{StaticResource PanelDesc}"
+                                   Text="기록 폴더가 최대 용량을 넘었을 때의 동작을 정합니다. ‘오래된 기록 삭제’는 오늘 파일을 제외하고 가장 오래된 파일부터 지웁니다."/>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="24"/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="24"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="최대 용량 (MB, 0 = 무제한)" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding Draft.LogMaxMB, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="기록 사용량" Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Text="{Binding StorageText}" Style="{StaticResource Num}" FontSize="15" Margin="0,8,0,0"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="4">
+                                <TextBlock Text="디스크 사용량" Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Text="{Binding DiskText}" Style="{StaticResource Num}" FontSize="15" Margin="0,8,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Text="초과 시 동작" Style="{StaticResource FieldLabel}"/>
+                        <Border Style="{StaticResource SegmentHost}">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Style="{StaticResource Segment}" Content="오래된 기록 삭제" GroupName="ovf" IsChecked="{Binding Draft.LogOverflow, Converter={StaticResource Eq}, ConverterParameter=delete}"/>
+                                <RadioButton Style="{StaticResource Segment}" Content="기록 중지" GroupName="ovf" IsChecked="{Binding Draft.LogOverflow, Converter={StaticResource Eq}, ConverterParameter=stop}"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Panel}">
+                    <StackPanel>
+                        <TextBlock Text="로그 기록 수준" Style="{StaticResource PanelTitle}"/>
+                        <TextBlock Style="{StaticResource PanelDesc}"
+                                   Text="분류별로 이벤트 패널과 로그 파일에 남길 최소 수준을 정합니다. DEBUG는 재연결 시도마다의 상세 오류까지 기록합니다."/>
+                        <ItemsControl ItemsSource="{Binding Draft.LogLevels}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Label}" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding Description}" Style="{StaticResource DevText}" FontSize="11.5"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="1" Style="{StaticResource SegmentHost}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <RadioButton Style="{StaticResource Segment}" Content="DEBUG" GroupName="{Binding Key}" Padding="10,5"
+                                                             IsChecked="{Binding Level, Converter={StaticResource Eq}, ConverterParameter=DEBUG}"/>
+                                                <RadioButton Style="{StaticResource Segment}" Content="INFO" GroupName="{Binding Key}" Padding="10,5"
+                                                             IsChecked="{Binding Level, Converter={StaticResource Eq}, ConverterParameter=INFO}"/>
+                                                <RadioButton Style="{StaticResource Segment}" Content="WARN" GroupName="{Binding Key}" Padding="10,5"
+                                                             IsChecked="{Binding Level, Converter={StaticResource Eq}, ConverterParameter=WARN}"/>
+                                                <RadioButton Style="{StaticResource Segment}" Content="ERROR" GroupName="{Binding Key}" Padding="10,5"
+                                                             IsChecked="{Binding Level, Converter={StaticResource Eq}, ConverterParameter=ERROR}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ===== 스트림 엔진 ===== -->
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding Section, Converter={StaticResource Eq}, ConverterParameter=engine}">
+            <StackPanel MaxWidth="880" HorizontalAlignment="Left">
+                <Border Style="{StaticResource Panel}">
+                    <StackPanel>
+                        <TextBlock Text="FFmpeg" Style="{StaticResource PanelTitle}"/>
+                        <TextBlock Style="{StaticResource PanelDesc}"
+                                   Text="스트림 수신·측정·디코딩에 FFmpeg를 사용합니다. 'ffmpeg'로 두면 프로그램 폴더의 ffmpeg.exe → 시스템 PATH 순으로 찾습니다."/>
+                        <TextBlock Text="FFmpeg 실행 파일" Style="{StaticResource FieldLabel}"/>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="확인" Margin="8,0,0,0" Command="{Binding CheckFfmpegCommand}"/>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="찾아보기" Margin="10,0,0,0" Command="{Binding BrowseFfmpegCommand}"/>
+                            <TextBox Text="{Binding Draft.FfmpegPath, UpdateSourceTrigger=PropertyChanged}"/>
+                        </DockPanel>
+                        <TextBlock Text="{Binding FfmpegTest}" Style="{StaticResource TestResult}"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Panel}">
+                    <StackPanel>
+                        <TextBlock Text="연결" Style="{StaticResource PanelTitle}"/>
+                        <TextBlock Style="{StaticResource PanelDesc}"
+                                   Text="RTSP 전송 방식은 TCP가 패킷 손실이 없어 비트레이트 측정에 정확합니다. 끊김이 감지되면 지정 간격으로 자동 재연결합니다."/>
+                        <TextBlock Text="RTSP 전송 방식" Style="{StaticResource FieldLabel}"/>
+                        <Border Style="{StaticResource SegmentHost}" Margin="0,0,0,18">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Style="{StaticResource Segment}" Content="TCP (권장)" GroupName="tr" IsChecked="{Binding Draft.RtspTransport, Converter={StaticResource Eq}, ConverterParameter=tcp}"/>
+                                <RadioButton Style="{StaticResource Segment}" Content="UDP" GroupName="tr" IsChecked="{Binding Draft.RtspTransport, Converter={StaticResource Eq}, ConverterParameter=udp}"/>
+                            </StackPanel>
+                        </Border>
+                        <Grid Style="{StaticResource Row}" HorizontalAlignment="Left">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="16"/>
+                                <ColumnDefinition Width="200"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="재연결 간격 (초)" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding Draft.ReconnectSec, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="무신호 판정 (초)" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding Draft.StallTimeoutSec, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                        </Grid>
+                        <CheckBox Style="{StaticResource Switch}" Content="하드웨어 디코딩 사용 (썸네일·비교 화면, -hwaccel auto)" IsChecked="{Binding Draft.HwAccel}"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ===== 시스템 ===== -->
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding Section, Converter={StaticResource Eq}, ConverterParameter=about}">
+            <StackPanel MaxWidth="880" HorizontalAlignment="Left">
+                <!-- 라이선스 -->
+                <Border Style="{StaticResource Panel}">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,16">
+                            <Border DockPanel.Dock="Right" CornerRadius="8" Padding="10,3" Background="#1F34D399" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE73E;" Style="{StaticResource Icon}" FontSize="11" Foreground="{StaticResource SaveBrush}" Margin="0,0,6,0"/>
+                                    <TextBlock Text="정품 인증됨" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource SaveBrush}"/>
+                                </StackPanel>
+                            </Border>
+                            <TextBlock Text="라이선스" Style="{StaticResource PanelTitle}" Margin="0" VerticalAlignment="Center"/>
+                        </DockPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Margin="0,0,16,16">
+                                <TextBlock Text="허가 채널 수" Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Text="{Binding LicenseChannelsText}" Style="{StaticResource Num}" FontSize="26" FontWeight="SemiBold"
+                                           Foreground="{StaticResource HecsBrush}"/>
+                                <TextBlock Text="{Binding LicenseChannelsNote}" Style="{StaticResource Caption}" FontSize="11.5" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="0,0,16,16">
+                                <TextBlock Text="라이선스 생성일" Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Text="{Binding LicenseDateText}" Style="{StaticResource Num}" FontSize="26" FontWeight="SemiBold"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Margin="0,0,16,16">
+                                <TextBlock Text="장치 ID (MAC)" Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Text="{Binding LicenseMachineText}" Style="{StaticResource Num}" FontSize="15" Margin="0,6,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="16"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="사용자 (고객 · 현장)" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding LicenseeText, Mode=OneWay}" IsReadOnly="True"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="라이선스 ID" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding LicenseIdText, Mode=OneWay}" IsReadOnly="True" FontFamily="{StaticResource NumFont}"/>
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Text="키 파일 위치" Style="{StaticResource FieldLabel}"/>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="폴더 열기" Margin="10,0,0,0"
+                                    Command="{Binding OpenLicenseFolderCommand}"/>
+                            <TextBox Text="{Binding LicensePath, Mode=OneWay}" IsReadOnly="True"/>
+                        </DockPanel>
+                        <TextBlock Style="{StaticResource DevText}" Margin="0,10,0,0"
+                                   Text="라이선스는 이 PC의 유선 랜카드 MAC, 허가 채널 수, 생성일을 담아 ECDSA P-256(SHA-256) 공개키로 서명하고, 이 PC에서만 열리도록 암호화한 파일입니다. 키를 바꾸려면 위 폴더의 license.key를 새 파일로 교체하고 프로그램을 다시 실행하세요."/>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Panel}">
+                    <StackPanel>
+                        <TextBlock Text="시스템 정보" Style="{StaticResource PanelTitle}" Margin="0,0,0,16"/>
+                        <UniformGrid Columns="3">
+                            <StackPanel Margin="0,0,16,16">
+                                <TextBlock Text="버전" Style="{StaticResource FieldLabel}"/>
+                                <!-- 5번 연속 클릭 → 개발자 모드 전환 (숨은 기능이라 커서·툴팁 없음) -->
+                                <Border Background="Transparent" HorizontalAlignment="Left" MouseLeftButtonUp="OnVersionClick">
+                                    <TextBlock Text="{Binding AppVersion}" Style="{StaticResource Num}" FontSize="15"/>
+                                </Border>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,16,16">
+                                <TextBlock Text="운영체제" Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Text="{Binding OsText}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,16,16">
+                                <TextBlock Text="하드웨어" Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Text="{Binding MachineText}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Text="런타임" Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Text="{Binding RuntimeText}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Text="FFmpeg" Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Text="{Binding FfmpegVersion}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Text="설정 파일" Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Text="{Binding SettingsPath}" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource SubTextBrush}"/>
+                            </StackPanel>
+                        </UniformGrid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 제품 이름: 개발자 모드에서만 보이며, 고른 값은 개발자 모드를 꺼도 유지된다 -->
+                <Border Style="{StaticResource DevPanel}" BorderBrush="#33FBBF24">
+                    <StackPanel>
+                        <TextBlock Text="제품 이름" Style="{StaticResource PanelTitle}"/>
+                        <TextBlock Style="{StaticResource PanelDesc}"
+                                   Text="화면·창 제목·이벤트·보고서에 표시할 제품 이름입니다. 고르는 즉시 적용·저장되며 개발자 모드를 꺼도 유지됩니다."/>
+                        <Border Style="{StaticResource SegmentHost}" HorizontalAlignment="Left">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Style="{StaticResource Segment}" Content="HECS" GroupName="brand"
+                                             IsChecked="{Binding BrandName, Converter={StaticResource Eq}, ConverterParameter=HECS}"/>
+                                <RadioButton Style="{StaticResource Segment}" Content="ECO" GroupName="brand"
+                                             IsChecked="{Binding BrandName, Converter={StaticResource Eq}, ConverterParameter=ECO}"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Panel}">
+                    <StackPanel>
+                        <TextBlock Text="{b:Brand 'HECS 장비'}" Style="{StaticResource PanelTitle}"/>
+                        <TextBlock Style="{StaticResource PanelDesc}"
+                                   Text="{b:Brand 'HECS 장비의 웹 관리 화면 주소입니다. 라이선스·녹화·장비 로그 레벨 등 장비 자체 설정은 웹 콘솔에서 변경합니다. 상단 바의 콘솔 버튼으로도 열 수 있습니다.'}"/>
+                        <TextBlock Text="웹 콘솔 주소" Style="{StaticResource FieldLabel}"/>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="웹 콘솔 열기" Margin="10,0,0,0" Command="{Binding OpenConsoleCommand}"/>
+                            <TextBox Text="{Binding Draft.HecsConsoleUrl, UpdateSourceTrigger=PropertyChanged}" Tag="http://192.168.100.210:8001"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Panel}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                            <Image Source="/Assets/HecsMonitor.png" Width="56" Height="56" RenderOptions.BitmapScalingMode="HighQuality"/>
+                            <StackPanel Margin="16,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="{b:Brand 'HECS Live Compression Monitor'}" FontSize="18" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource Caption}"><Run Text="버전 "/><Run Text="{Binding AppVersion, Mode=OneWay}"/></TextBlock>
+                            </StackPanel>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource DevText}" LineHeight="21">
+                            <Run Text="{b:Brand '원본 카메라 RTSP 스트림과 HECS가 압축·전송한 RTSP 스트림을 동시에 수신하여 실시간 비트레이트, 압축률, 대역폭 절감률, 누적 절약 데이터를 측정합니다.'}"/><LineBreak/><LineBreak/>
+                            <Run Foreground="{StaticResource TextBrush}" Text="측정 방식"/><LineBreak/>
+                            • 비트레이트: 재인코딩 없이 수신한 비디오 패킷 크기의 합 × 8 ÷ 측정 윈도(초)<LineBreak/>
+                            <Run Text="{b:Brand '• 압축률: 원본 비트레이트 ÷ HECS 비트레이트 (예: 8.0 : 1)'}"/><LineBreak/>
+                            <Run Text="{b:Brand '• 절감률: 1 − HECS ÷ 원본'}"/><LineBreak/>
+                            <Run Text="{b:Brand '• 누적 절약 데이터: 두 스트림이 모두 수신 중인 동안의 (원본 − HECS) 데이터량'}"/><LineBreak/>
+                            • 오디오 트랙은 제외하고 첫 번째 비디오 트랙만 측정합니다.<LineBreak/><LineBreak/>
+                            <Run Foreground="{StaticResource TextBrush}" Text="저장 위치"/><LineBreak/>
+                            • 설정: %APPDATA%\HECSMonitor\settings.json<LineBreak/>
+                            • 측정 기록·이벤트: 알림 · 기록 화면에서 지정한 폴더
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
