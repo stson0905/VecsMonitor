@@ -6,4 +6,4 @@ publish/
 dist/
 
 src/HecsMonitor/lic/license.key
-keys/
+# keys/
